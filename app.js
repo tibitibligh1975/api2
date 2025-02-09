@@ -1,37 +1,56 @@
-// Corrigir problema de CORS no servidor
+// Importando as dependências
 import axios from 'axios';
 import express from 'express';
 import cors from 'cors';
 
 const app = express();
 
-// Configura��o do CORS para permitir qualquer dom�nio
+// Configuração do CORS para permitir qualquer domínio
 app.use(cors({
-  origin: '*', // Permite requisi��es de qualquer origem
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'], // M�todos permitidos
-  allowedHeaders: ['Content-Type', 'Authorization'], // Cabe�alhos permitidos
+  origin: '*', // Permite requisições de qualquer origem
+  methods: ['GET', 'POST', 'OPTIONS'], // Métodos permitidos
+  allowedHeaders: ['Content-Type', 'Authorization'], // Cabeçalhos permitidos
 }));
 
+// Permitir JSON no body
 app.use(express.json());
 
-// Rota para gerar PIX
+// Sua secret key fornecida
+const SECRET_KEY = '1345025f-70bb-4e3e-946a-5200f04a5f04';
+const BASE_URL = 'https://pay.exattus.com/api/v1';
+
+// Rota para gerar um pagamento via PIX
 app.post('/g', async (req, res) => {
   try {
-    const { name, cpf, offerId, email, phone, utmQuery } = req.body;
+    const { name, email, cpf, phone, amount, items } = req.body;
 
-    if (!name || !cpf || !offerId || !email || !phone) {
-      return res.status(400).json({ error: 'Todos os campos obrigat�rios devem ser preenchidos: name, cpf, offerId, email, phone.' });
+    // Verificação de campos obrigatórios
+    if (!name || !email || !cpf || !phone || !amount || !items || !Array.isArray(items)) {
+      return res.status(400).json({ error: 'Os campos obrigatórios são: name, email, cpf, phone, amount e items (array).' });
     }
 
-    const response = await axios.post('https://app.exattus.com/api/webhook/generate-pix/', {
-      name,
-      cpf,
-      offerId,
-      email,
-      phone,
-      utmQuery
-    });
+    // Enviando requisição para a API Exattus
+    const response = await axios.post(
+      `${BASE_URL}/transaction.purchase`,
+      {
+        name,
+        email,
+        cpf,
+        phone,
+        paymentMethod: 'PIX',
+        amount,
+        traceable: true,
+        items,
+      },
+      {
+        headers: {
+          'Authorization': SECRET_KEY,
+          'Content-Type': 'application/json',
+        },
+      }
+    );
 
+    // Retorna a resposta da API para o cliente
     return res.status(response.status).json(response.data);
   } catch (error) {
     console.error('Erro ao gerar PIX:', error.message);
@@ -44,19 +63,28 @@ app.post('/g', async (req, res) => {
   }
 });
 
-// Rota para verificar pagamento
+// Rota para verificar o status de um pagamento
 app.post('/verify', async (req, res) => {
   try {
     const { paymentId } = req.body;
 
+    // Verificação de campo obrigatório
     if (!paymentId) {
-      return res.status(400).json({ error: 'O campo paymentId � obrigat�rio.' });
+      return res.status(400).json({ error: 'O campo paymentId é obrigatório.' });
     }
 
-    const response = await axios.post('https://app.exattus.com/api/verify-payment', {
-      paymentId,
-    });
+    // Enviando requisição para verificar pagamento
+    const response = await axios.get(
+      `${BASE_URL}/transaction.getPayment?id=${paymentId}`,
+      {
+        headers: {
+          'Authorization': SECRET_KEY,
+          'Content-Type': 'application/json',
+        },
+      }
+    );
 
+    // Retorna a resposta da API para o cliente
     return res.status(response.status).json(response.data);
   } catch (error) {
     console.error('Erro ao verificar pagamento:', error.message);
