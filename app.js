@@ -1,138 +1,88 @@
-// Importando as dependências
+// Corrigir problema de CORS no servidor
+import axios from 'axios';
 import express from 'express';
 import cors from 'cors';
-import axios from 'axios';
 
 const app = express();
 
-// Configuração mais detalhada do CORS
-const corsOptions = {
-    origin: true, // Permite qualquer origem
-    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
-    credentials: true,
-    optionsSuccessStatus: 204,
-    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin']
-};
+// Configuração do CORS para permitir qualquer domínio
+app.use(cors({
+  origin: '*', // Permite requisições de qualquer origem
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'], // Métodos permitidos
+  allowedHeaders: ['Content-Type', 'Authorization'], // Cabeçalhos permitidos
+}));
 
-// Aplicando CORS como primeiro middleware
-app.use(cors(corsOptions));
-
-// Middleware para preflight requests
-app.options('*', cors(corsOptions));
-
-// Parse JSON payloads
 app.use(express.json());
 
-// Middleware para logging
-app.use((req, res, next) => {
-    console.log(`${req.method} ${req.path} - ${new Date().toISOString()}`);
-    next();
-});
+const API_URL = 'https://pay.exattus.com/api/v1';
+const AUTH_TOKEN = '1345025f-70bb-4e3e-946a-5200f04a5f04';
 
 // Rota para gerar PIX
 app.post('/g', async (req, res) => {
-    try {
-        const { name, email, cpf, phone, amount } = req.body;
+  try {
+    const { name, cpf, email, phone, amount, items } = req.body;
 
-        if (!name || !email || !cpf || !phone || !amount) {
-            return res.status(400).json({
-                error: 'Os campos obrigatorios sao: name, email, cpf, phone, amount'
-            });
-        }
-
-        const payload = {
-            name,
-            email,
-            cpf,
-            phone,
-            amount,
-            items: [
-                {
-                    unitPrice: amount,
-                    title: "Opcao Mais",
-                    quantity: 1,
-                    tangible: false
-                }
-            ]
-        };
-
-        const response = await axios.post(
-            'https://pay.exattus.com/api/v1/transaction.purchase',
-            payload,
-            {
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': '1345025f-70bb-4e3e-946a-5200f04a5f04'
-                }
-            }
-        );
-
-        return res.status(response.status).json(response.data);
-    } catch (error) {
-        console.error('Erro ao gerar PIX:', error.message);
-        if (error.response) {
-            return res.status(error.response.status).json({
-                error: error.response.data || 'Erro da API Exattus',
-            });
-        }
-        return res.status(500).json({ error: 'Erro interno ao processar o PIX' });
+    if (!name || !cpf || !email || !phone || !amount || !items) {
+      return res.status(400).json({ error: 'Todos os campos obrigatórios devem ser preenchidos: name, cpf, email, phone, amount, items.' });
     }
+
+    const response = await axios.post(`${API_URL}/transaction.purchase`, {
+      name,
+      email,
+      cpf,
+      phone,
+      paymentMethod: 'PIX',
+      amount,
+      traceable: true,
+      items
+    }, {
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': AUTH_TOKEN
+      }
+    });
+
+    return res.status(response.status).json(response.data);
+  } catch (error) {
+    console.error('Erro ao gerar PIX:', error.message);
+    if (error.response) {
+      return res.status(error.response.status).json({
+        error: error.response.data || 'Erro da API Exattus',
+      });
+    }
+    return res.status(500).json({ error: 'Erro interno ao processar o PIX' });
+  }
 });
 
 // Rota para verificar pagamento
 app.post('/verify', async (req, res) => {
-    try {
-        const { paymentId } = req.body;
+  try {
+    const { paymentId } = req.body;
 
-        if (!paymentId) {
-            return res.status(400).json({ error: 'paymentId e obrigatorio' });
-        }
-
-        const response = await axios.get(
-            `https://pay.exattus.com/api/v1/transaction/${paymentId}`,
-            {
-                headers: {
-                    'Authorization': '1345025f-70bb-4e3e-946a-5200f04a5f04'
-                }
-            }
-        );
-
-        return res.status(200).json(response.data);
-    } catch (error) {
-        console.error('Erro ao verificar pagamento:', error.message);
-        if (error.response) {
-            return res.status(error.response.status).json({
-                error: error.response.data || 'Erro da API Exattus'
-            });
-        }
-        return res.status(500).json({ error: 'Erro interno ao verificar pagamento' });
+    if (!paymentId) {
+      return res.status(400).json({ error: 'O campo paymentId é obrigatório.' });
     }
-});
 
-// Rota de teste mais detalhada
-app.get('/', (req, res) => {
-    res.send(`
-        <html>
-            <body>
-                <h1>Servidor de PIX está online!</h1>
-                <p>Timestamp: ${new Date().toISOString()}</p>
-                <p>Ambiente: ${process.env.NODE_ENV || 'development'}</p>
-            </body>
-        </html>
-    `);
-});
-
-// Rota de teste em JSON
-app.get('/status', (req, res) => {
-    res.json({
-        status: 'online',
-        timestamp: new Date().toISOString(),
-        environment: process.env.NODE_ENV || 'development'
+    const response = await axios.get(`${API_URL}/transaction.getPayment?id=${paymentId}`, {
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': AUTH_TOKEN
+      }
     });
+
+    return res.status(response.status).json(response.data);
+  } catch (error) {
+    console.error('Erro ao verificar pagamento:', error.message);
+    if (error.response) {
+      return res.status(error.response.status).json({
+        error: error.response.data || 'Erro da API Exattus',
+      });
+    }
+    return res.status(500).json({ error: 'Erro interno ao verificar o pagamento' });
+  }
 });
 
 // Inicia o servidor
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-    console.log(`Servidor rodando na porta ${PORT}`);
+app.listen(3000, () => {
+  console.log('Servidor rodando na porta 3000');
 });
