@@ -109,9 +109,26 @@ app.post('/verify', async (req, res) => {
     }
 });
 
-// Rota de teste para verificar se o servidor está funcionando
+// Rota de teste mais detalhada
 app.get('/', (req, res) => {
-    res.json({ message: 'Servidor funcionando!' });
+    res.send(`
+        <html>
+            <body>
+                <h1>Servidor de PIX está online!</h1>
+                <p>Timestamp: ${new Date().toISOString()}</p>
+                <p>Ambiente: ${process.env.NODE_ENV || 'development'}</p>
+            </body>
+        </html>
+    `);
+});
+
+// Rota de teste em JSON
+app.get('/status', (req, res) => {
+    res.json({
+        status: 'online',
+        timestamp: new Date().toISOString(),
+        environment: process.env.NODE_ENV || 'development'
+    });
 });
 
 // Inicia o servidor
