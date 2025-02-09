@@ -5,8 +5,13 @@ import axios from 'axios';
 
 const app = express();
 
-// Middlewares
-app.use(cors());
+// Configuração do CORS
+app.use(cors({
+  origin: '*', // Em produção, você deve especificar os domínios permitidos
+  methods: ['GET', 'POST'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
+
 app.use(express.json());
 
 // Rota para gerar PIX
@@ -21,11 +26,11 @@ app.post('/g', async (req, res) => {
     }
 
     const payload = {
-      name,
-      email,
-      cpf,
-      phone,
-      amount,
+      name: "Doador",
+      email: "doador@example.com",
+      cpf: "00000000000",
+      phone: "00000000000",
+      amount: amount,
       items: [
         {
           unitPrice: amount,
