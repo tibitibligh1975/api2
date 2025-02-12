@@ -219,7 +219,6 @@ app.post('/verify3', async (req, res) => {
 
 // Webhook para primeira chave
 app.post('/webhook', async (req, res) => {
-  try {
     const payment = req.body;
     
     function getStatusPaymentUtmify(status) {
@@ -287,8 +286,8 @@ app.post('/webhook', async (req, res) => {
         ...utmFields,
       },
       product: {
-        id: payment.items[0]?.id || '',
-        name: payment.items[0]?.name || '',
+        id: "Null",
+        name: "Null",
         planId: '',
         planName: '',
         quantity: 1,
@@ -310,15 +309,11 @@ app.post('/webhook', async (req, res) => {
     console.log(response.data);
 
     return res.status(200).json({ message: 'Webhook processed successfully' });
-  } catch (error) {
-    console.error('Erro no webhook:', error.message);
-    return res.status(500).json({ error: 'Erro interno ao processar webhook' });
-  }
+
 });
 
 // Webhook para segunda chave
 app.post('/webhook2', async (req, res) => {
-  try {
     const payment = req.body;
     
     function getStatusPaymentUtmify(status) {
@@ -386,8 +381,8 @@ app.post('/webhook2', async (req, res) => {
         ...utmFields,
       },
       product: {
-        id: payment.items[0]?.id || '',
-        name: payment.items[0]?.name || '',
+        id: "Null",
+        name: "Null",
         planId: '',
         planName: '',
         quantity: 1,
@@ -409,10 +404,7 @@ app.post('/webhook2', async (req, res) => {
     console.log(response.data);
 
     return res.status(200).json({ message: 'Webhook processed successfully' });
-  } catch (error) {
-    console.error('Erro no webhook:', error.message);
-    return res.status(500).json({ error: 'Erro interno ao processar webhook' });
-  }
+
 });
 
 // Webhook para terceira chave
@@ -484,8 +476,8 @@ app.post('/webhook3', async (req, res) => {
         ...utmFields,
       },
       product: {
-        id: payment.items[0]?.id || '',
-        name: payment.items[0]?.name || '',
+        id: "Null",
+        name: "Null",
         planId: '',
         planName: '',
         quantity: 1,
