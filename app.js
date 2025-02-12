@@ -247,6 +247,16 @@ app.post('/webhook', async (req, res) => {
       }, {});
     }
 
+    function getMethodPaymentNemu(method) {
+      const mapMethodPaymentNemu = {
+        BILLET: "billet",
+        CREDIT_CARD: "credit_card",
+        PIX: "pix",
+      };
+  
+      return mapMethodPaymentNemu[method];
+    }
+
     const utmData = parseUTM(payment.utm);
 
     const utmFields = {
@@ -256,13 +266,13 @@ app.post('/webhook', async (req, res) => {
       utm_source: utmData.utm_source ? utmData.utm_source : " ",
       utm_term: utmData.utm_term ? utmData.utm_term : " ",
     };
-    // Prepare UTMify body
+
     const bodyUtmify = {
       orderId: payment.paymentId,
       platform: 'Pix',
-      paymentMethod: payment.paymentMethod,
+      paymentMethod: getMethodPaymentNemu(payment.paymentMethod),
       status: getStatusPaymentUtmify(payment.status),
-      createdAt: payment.createdAt,
+      createdAt: new Date().toISOString(),
       approvedDate: payment.approvedAt,
       refundedAt: null,
       customer: {
@@ -278,7 +288,7 @@ app.post('/webhook', async (req, res) => {
       },
       product: {
         id: payment.items[0]?.id || '',
-        name: payment.items[0]?.description || '',
+        name: payment.items[0]?.name || '',
         planId: '',
         planName: '',
         quantity: 1,
@@ -286,18 +296,18 @@ app.post('/webhook', async (req, res) => {
       },
       commission: {
         totalPriceInCents: payment.netValue,
-        gatewayFeeInCents: 0, // Adjust if you have this information
-        userCommissionInCents: 0, // Adjust if you have this information
+        gatewayFeeInCents: 0,
+        userCommissionInCents: 0,
       },
     };
 
-    // Send to UTMify
-    await axios.post("https://api.utmify.com.br/api-credentials/orders", bodyUtmify, {
+    const response = await axios.post("https://api.utmify.com.br/api-credentials/orders", bodyUtmify, {
       headers: {
         "x-api-token": UTMIFY_API_TOKEN,
       },
       timeout: 5000,
     });
+    console.log(response.data);
 
     return res.status(200).json({ message: 'Webhook processed successfully' });
   } catch (error) {
@@ -336,6 +346,16 @@ app.post('/webhook2', async (req, res) => {
       }, {});
     }
 
+    function getMethodPaymentNemu(method) {
+      const mapMethodPaymentNemu = {
+        BILLET: "billet",
+        CREDIT_CARD: "credit_card",
+        PIX: "pix",
+      };
+  
+      return mapMethodPaymentNemu[method];
+    }
+
     const utmData = parseUTM(payment.utm);
 
     const utmFields = {
@@ -345,13 +365,13 @@ app.post('/webhook2', async (req, res) => {
       utm_source: utmData.utm_source ? utmData.utm_source : " ",
       utm_term: utmData.utm_term ? utmData.utm_term : " ",
     };
-    // Prepare UTMify body
+
     const bodyUtmify = {
       orderId: payment.paymentId,
       platform: 'Pix',
-      paymentMethod: payment.paymentMethod,
+      paymentMethod: getMethodPaymentNemu(payment.paymentMethod),
       status: getStatusPaymentUtmify(payment.status),
-      createdAt: payment.createdAt,
+      createdAt: new Date().toISOString(),
       approvedDate: payment.approvedAt,
       refundedAt: null,
       customer: {
@@ -367,7 +387,7 @@ app.post('/webhook2', async (req, res) => {
       },
       product: {
         id: payment.items[0]?.id || '',
-        name: payment.items[0]?.description || '',
+        name: payment.items[0]?.name || '',
         planId: '',
         planName: '',
         quantity: 1,
@@ -375,18 +395,18 @@ app.post('/webhook2', async (req, res) => {
       },
       commission: {
         totalPriceInCents: payment.netValue,
-        gatewayFeeInCents: 0, // Adjust if you have this information
-        userCommissionInCents: 0, // Adjust if you have this information
+        gatewayFeeInCents: 0,
+        userCommissionInCents: 0,
       },
     };
 
-    // Send to UTMify
-    await axios.post("https://api.utmify.com.br/api-credentials/orders", bodyUtmify, {
+    const response = await axios.post("https://api.utmify.com.br/api-credentials/orders", bodyUtmify, {
       headers: {
         "x-api-token": UTMIFY_API_TOKEN2,
       },
       timeout: 5000,
     });
+    console.log(response.data);
 
     return res.status(200).json({ message: 'Webhook processed successfully' });
   } catch (error) {
@@ -397,7 +417,6 @@ app.post('/webhook2', async (req, res) => {
 
 // Webhook para terceira chave
 app.post('/webhook3', async (req, res) => {
-  try {
     const payment = req.body;
     
     function getStatusPaymentUtmify(status) {
@@ -425,6 +444,16 @@ app.post('/webhook3', async (req, res) => {
       }, {});
     }
 
+    function getMethodPaymentNemu(method) {
+      const mapMethodPaymentNemu = {
+        BILLET: "billet",
+        CREDIT_CARD: "credit_card",
+        PIX: "pix",
+      };
+  
+      return mapMethodPaymentNemu[method];
+    }
+
     const utmData = parseUTM(payment.utm);
 
     const utmFields = {
@@ -438,9 +467,9 @@ app.post('/webhook3', async (req, res) => {
     const bodyUtmify = {
       orderId: payment.paymentId,
       platform: 'Pix',
-      paymentMethod: payment.paymentMethod,
+      paymentMethod: getMethodPaymentNemu(payment.paymentMethod),
       status: getStatusPaymentUtmify(payment.status),
-      createdAt: payment.createdAt,
+      createdAt: new Date().toISOString(),
       approvedDate: payment.approvedAt,
       refundedAt: null,
       customer: {
@@ -456,7 +485,7 @@ app.post('/webhook3', async (req, res) => {
       },
       product: {
         id: payment.items[0]?.id || '',
-        name: payment.items[0]?.description || '',
+        name: payment.items[0]?.name || '',
         planId: '',
         planName: '',
         quantity: 1,
@@ -469,18 +498,16 @@ app.post('/webhook3', async (req, res) => {
       },
     };
 
-    await axios.post("https://api.utmify.com.br/api-credentials/orders", bodyUtmify, {
+    const response = await axios.post("https://api.utmify.com.br/api-credentials/orders", bodyUtmify, {
       headers: {
         "x-api-token": UTMIFY_API_TOKEN3,
       },
       timeout: 5000,
     });
+    console.log(response.data);
 
     return res.status(200).json({ message: 'Webhook processed successfully' });
-  } catch (error) {
-    console.error('Erro no webhook:', error.message);
-    return res.status(500).json({ error: 'Erro interno ao processar webhook' });
-  }
+
 });
 
 // Inicia o servidor
