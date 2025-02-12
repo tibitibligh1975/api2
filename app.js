@@ -17,6 +17,8 @@ app.use(express.json());
 const API_URL = 'https://pay.exattus.com/api/v1';
 const AUTH_TOKEN = '1345025f-70bb-4e3e-946a-5200f04a5f04';
 const AUTH_TOKEN_2 = '45878961-d4f2-49a8-a59a-e1328a398484';
+const UTMIFY_API_TOKEN = 'DZ8jfAR4t4TwHInTB8XUWRrMounDDEMoZqZe';
+const UTMIFY_API_TOKEN2 = 'rVwvRvaqyWR0c9oMBNzykniehOr7ocO2mGVo'; // Add your UTMify API token
 
 // Rota para gerar PIX
 app.post('/g', async (req, res) => {
@@ -145,6 +147,184 @@ app.post('/verify2', async (req, res) => {
       });
     }
     return res.status(500).json({ error: 'Erro interno ao verificar o pagamento' });
+  }
+});
+
+// Webhook para primeira chave
+app.post('/webhook', async (req, res) => {
+  try {
+    const payment = req.body;
+    
+    function getStatusPaymentUtmify(status) {
+      const mapMethodPaymentUtmify = {
+        PENDING: "waiting_payment",
+        APPROVED: "paid",
+        CANCELED: "refused",
+        CHARGEBACK: "chargedback",
+        REFUNDED: "refunded",
+        REJECTED: "refused",
+      };
+      return mapMethodPaymentUtmify[status];
+    }
+
+    function parseUTM(utmString) {
+      let modifiedString = utmString.replace(/\+\+/g, " ").replace(/—/g, " ");
+      modifiedString = modifiedString.replace(/\s{2,}/g, " ");
+  
+      return modifiedString.split("&").reduce((acc, pair) => {
+        const [key, value] = pair.split("=");
+        if (key && value) {
+          acc[key] = value.replace(/\+/g, " ").replace(/\s{2,}/g, " ");
+        }
+        return acc;
+      }, {});
+    }
+
+    const utmData = parseUTM(payment.utm);
+
+    const utmFields = {
+      utm_campaign: utmData.utm_campaign ? utmData.utm_campaign : " ",
+      utm_content: utmData.utm_content ? utmData.utm_content : " ",
+      utm_medium: utmData.utm_medium ? utmData.utm_medium : " ",
+      utm_source: utmData.utm_source ? utmData.utm_source : " ",
+      utm_term: utmData.utm_term ? utmData.utm_term : " ",
+    };
+    // Prepare UTMify body
+    const bodyUtmify = {
+      orderId: payment.paymentId,
+      platform: 'Pix',
+      paymentMethod: payment.paymentMethod,
+      status: getStatusPaymentUtmify(payment.status),
+      createdAt: payment.createdAt,
+      approvedDate: payment.approvedAt,
+      refundedAt: null,
+      customer: {
+        name: payment.customer.name,
+        email: payment.customer.email,
+        phone: `+55${payment.customer.phone}`,
+        document: payment.customer.cpf,
+      },
+      trackingParameters: {
+        sck: "",
+        src: "",
+        ...utmFields,
+      },
+      product: {
+        id: payment.items[0]?.id || '',
+        name: payment.items[0]?.description || '',
+        planId: '',
+        planName: '',
+        quantity: 1,
+        priceInCents: payment.totalValue,
+      },
+      commission: {
+        totalPriceInCents: payment.netValue,
+        gatewayFeeInCents: 0, // Adjust if you have this information
+        userCommissionInCents: 0, // Adjust if you have this information
+      },
+    };
+
+    // Send to UTMify
+    await axios.post("https://api.utmify.com.br/api-credentials/orders", bodyUtmify, {
+      headers: {
+        "x-api-token": UTMIFY_API_TOKEN,
+      },
+      timeout: 5000,
+    });
+
+    return res.status(200).json({ message: 'Webhook processed successfully' });
+  } catch (error) {
+    console.error('Erro no webhook:', error.message);
+    return res.status(500).json({ error: 'Erro interno ao processar webhook' });
+  }
+});
+
+// Webhook para segunda chave
+app.post('/webhook2', async (req, res) => {
+  try {
+    const payment = req.body;
+    
+    function getStatusPaymentUtmify(status) {
+      const mapMethodPaymentUtmify = {
+        PENDING: "waiting_payment",
+        APPROVED: "paid",
+        CANCELED: "refused",
+        CHARGEBACK: "chargedback",
+        REFUNDED: "refunded",
+        REJECTED: "refused",
+      };
+      return mapMethodPaymentUtmify[status];
+    }
+
+    function parseUTM(utmString) {
+      let modifiedString = utmString.replace(/\+\+/g, " ").replace(/—/g, " ");
+      modifiedString = modifiedString.replace(/\s{2,}/g, " ");
+  
+      return modifiedString.split("&").reduce((acc, pair) => {
+        const [key, value] = pair.split("=");
+        if (key && value) {
+          acc[key] = value.replace(/\+/g, " ").replace(/\s{2,}/g, " ");
+        }
+        return acc;
+      }, {});
+    }
+
+    const utmData = parseUTM(payment.utm);
+
+    const utmFields = {
+      utm_campaign: utmData.utm_campaign ? utmData.utm_campaign : " ",
+      utm_content: utmData.utm_content ? utmData.utm_content : " ",
+      utm_medium: utmData.utm_medium ? utmData.utm_medium : " ",
+      utm_source: utmData.utm_source ? utmData.utm_source : " ",
+      utm_term: utmData.utm_term ? utmData.utm_term : " ",
+    };
+    // Prepare UTMify body
+    const bodyUtmify = {
+      orderId: payment.paymentId,
+      platform: 'Pix',
+      paymentMethod: payment.paymentMethod,
+      status: getStatusPaymentUtmify(payment.status),
+      createdAt: payment.createdAt,
+      approvedDate: payment.approvedAt,
+      refundedAt: null,
+      customer: {
+        name: payment.customer.name,
+        email: payment.customer.email,
+        phone: `+55${payment.customer.phone}`,
+        document: payment.customer.cpf,
+      },
+      trackingParameters: {
+        sck: "",
+        src: "",
+        ...utmFields,
+      },
+      product: {
+        id: payment.items[0]?.id || '',
+        name: payment.items[0]?.description || '',
+        planId: '',
+        planName: '',
+        quantity: 1,
+        priceInCents: payment.totalValue,
+      },
+      commission: {
+        totalPriceInCents: payment.netValue,
+        gatewayFeeInCents: 0, // Adjust if you have this information
+        userCommissionInCents: 0, // Adjust if you have this information
+      },
+    };
+
+    // Send to UTMify
+    await axios.post("https://api.utmify.com.br/api-credentials/orders", bodyUtmify, {
+      headers: {
+        "x-api-token": UTMIFY_API_TOKEN2,
+      },
+      timeout: 5000,
+    });
+
+    return res.status(200).json({ message: 'Webhook processed successfully' });
+  } catch (error) {
+    console.error('Erro no webhook:', error.message);
+    return res.status(500).json({ error: 'Erro interno ao processar webhook' });
   }
 });
 
