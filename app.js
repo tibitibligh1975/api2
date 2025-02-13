@@ -308,13 +308,13 @@ app.post('/webhook', async (req, res) => {
       platform: 'Pix',
       paymentMethod: getMethodPaymentNemu(payment.paymentMethod),
       status: getStatusPaymentUtmify(payment.status),
-      createdAt: new Date().toISOString(),
+      createdAt: payment.createdAt,
       approvedDate: payment.approvedAt,
       refundedAt: null,
       customer: {
         name: payment.customer.name,
         email: payment.customer.email,
-        phone: `+55${payment.customer.phone}`,
+        phone: payment.customer.phone.replace('+55', ''),
         document: payment.customer.cpf,
       },
       trackingParameters: {
@@ -322,14 +322,14 @@ app.post('/webhook', async (req, res) => {
         src: "",
         ...utmFields,
       },
-      product: {
+      products: [{
         id: "Null",
         name: "Null",
         planId: '',
         planName: '',
         quantity: 1,
         priceInCents: payment.totalValue,
-      },
+      }],
       commission: {
         totalPriceInCents: payment.netValue,
         gatewayFeeInCents: 0,
@@ -403,13 +403,13 @@ app.post('/webhook2', async (req, res) => {
       platform: 'Pix',
       paymentMethod: getMethodPaymentNemu(payment.paymentMethod),
       status: getStatusPaymentUtmify(payment.status),
-      createdAt: new Date().toISOString(),
+      createdAt: payment.createdAt,
       approvedDate: payment.approvedAt,
       refundedAt: null,
       customer: {
         name: payment.customer.name,
         email: payment.customer.email,
-        phone: `+55${payment.customer.phone}`,
+        phone: payment.customer.phone.replace('+55', ''),
         document: payment.customer.cpf,
       },
       trackingParameters: {
@@ -417,14 +417,14 @@ app.post('/webhook2', async (req, res) => {
         src: "",
         ...utmFields,
       },
-      product: {
+      products: [{
         id: "Null",
         name: "Null",
         planId: '',
         planName: '',
         quantity: 1,
         priceInCents: payment.totalValue,
-      },
+      }],
       commission: {
         totalPriceInCents: payment.netValue,
         gatewayFeeInCents: 0,
@@ -498,13 +498,13 @@ app.post('/webhook3', async (req, res) => {
       platform: 'Pix',
       paymentMethod: getMethodPaymentNemu(payment.paymentMethod),
       status: getStatusPaymentUtmify(payment.status),
-      createdAt: new Date().toISOString(),
+      createdAt: payment.createdAt,
       approvedDate: payment.approvedAt,
       refundedAt: null,
       customer: {
         name: payment.customer.name,
         email: payment.customer.email,
-        phone: `+55${payment.customer.phone}`,
+        phone: payment.customer.phone.replace('+55', ''),
         document: payment.customer.cpf,
       },
       trackingParameters: {
@@ -512,14 +512,14 @@ app.post('/webhook3', async (req, res) => {
         src: "",
         ...utmFields,
       },
-      product: {
+      products: [{
         id: "Null",
         name: "Null",
         planId: '',
         planName: '',
         quantity: 1,
         priceInCents: payment.totalValue,
-      },
+      }],
       commission: {
         totalPriceInCents: payment.netValue,
         gatewayFeeInCents: 0,
