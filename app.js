@@ -31,6 +31,10 @@ app.post('/g', async (req, res) => {
       return res.status(400).json({ error: 'Todos os campos obrigatórios devem ser preenchidos: name, cpf, email, phone, amount, items.' });
     }
 
+    // Validação do utmQuery
+    const defaultUtmQuery = 'utm_source=direct&utm_medium=none&utm_campaign=organic';
+    const finalUtmQuery = utmQuery || defaultUtmQuery;
+
     const response = await axios.post(`${API_URL}/transaction.purchase`, {
       name,
       email,
@@ -40,7 +44,7 @@ app.post('/g', async (req, res) => {
       amount,
       traceable: true,
       items,
-      utmQuery
+      utmQuery: finalUtmQuery  // Garantindo que o utmQuery seja enviado
     }, {
       headers: {
         'Content-Type': 'application/json',
@@ -91,11 +95,21 @@ app.post('/verify', async (req, res) => {
 // Rota para gerar PIX (segunda chave)
 app.post('/g2', async (req, res) => {
   try {
+    console.log('Recebida requisição POST em /g2:', req.body);
     const { name, cpf, email, phone, amount, items, utmQuery } = req.body;
 
     if (!name || !cpf || !email || !phone || !amount || !items) {
+      console.log('Erro: campos obrigatórios faltando');
       return res.status(400).json({ error: 'Todos os campos obrigatórios devem ser preenchidos: name, cpf, email, phone, amount, items.' });
     }
+
+    // Validação do utmQuery
+    const defaultUtmQuery = 'utm_source=direct&utm_medium=none&utm_campaign=organic';
+    const finalUtmQuery = utmQuery || defaultUtmQuery;
+
+    console.log('Enviando requisição para Exattus (chave 2):', {
+      name, email, cpf, phone, amount, items, utmQuery: finalUtmQuery
+    });
 
     const response = await axios.post(`${API_URL}/transaction.purchase`, {
       name,
@@ -106,7 +120,7 @@ app.post('/g2', async (req, res) => {
       amount,
       traceable: true,
       items,
-      utmQuery
+      utmQuery: finalUtmQuery
     }, {
       headers: {
         'Content-Type': 'application/json',
@@ -114,9 +128,14 @@ app.post('/g2', async (req, res) => {
       }
     });
 
+    console.log('Resposta da API Exattus:', response.data);
     return res.status(response.status).json(response.data);
   } catch (error) {
-    console.error('Erro ao gerar PIX:', error.message);
+    console.error('Erro detalhado ao gerar PIX:', {
+      message: error.message,
+      response: error.response?.data,
+      stack: error.stack
+    });
     if (error.response) {
       return res.status(error.response.status).json({
         error: error.response.data || 'Erro da API Exattus',
@@ -157,11 +176,21 @@ app.post('/verify2', async (req, res) => {
 // Rota para gerar PIX (terceira chave)
 app.post('/g3', async (req, res) => {
   try {
+    console.log('Recebida requisição POST em /g3:', req.body);
     const { name, cpf, email, phone, amount, items, utmQuery } = req.body;
 
     if (!name || !cpf || !email || !phone || !amount || !items) {
+      console.log('Erro: campos obrigatórios faltando');
       return res.status(400).json({ error: 'Todos os campos obrigatórios devem ser preenchidos: name, cpf, email, phone, amount, items.' });
     }
+
+    // Validação do utmQuery
+    const defaultUtmQuery = 'utm_source=direct&utm_medium=none&utm_campaign=organic';
+    const finalUtmQuery = utmQuery || defaultUtmQuery;
+
+    console.log('Enviando requisição para Exattus (chave 3):', {
+      name, email, cpf, phone, amount, items, utmQuery: finalUtmQuery
+    });
 
     const response = await axios.post(`${API_URL}/transaction.purchase`, {
       name,
@@ -172,7 +201,7 @@ app.post('/g3', async (req, res) => {
       amount,
       traceable: true,
       items,
-      utmQuery
+      utmQuery: finalUtmQuery
     }, {
       headers: {
         'Content-Type': 'application/json',
@@ -180,9 +209,14 @@ app.post('/g3', async (req, res) => {
       }
     });
 
+    console.log('Resposta da API Exattus:', response.data);
     return res.status(response.status).json(response.data);
   } catch (error) {
-    console.error('Erro ao gerar PIX:', error.message);
+    console.error('Erro detalhado ao gerar PIX:', {
+      message: error.message,
+      response: error.response?.data,
+      stack: error.stack
+    });
     if (error.response) {
       return res.status(error.response.status).json({
         error: error.response.data || 'Erro da API Exattus',
