@@ -323,10 +323,10 @@ app.post('/webhook', async (req, res) => {
         ...utmFields,
       },
       products: [{
-        id: "Null",
-        name: "Null",
-        planId: '',
-        planName: '',
+        id: null,
+        name: null,
+        planId: null,
+        planName: null
         quantity: 1,
         priceInCents: payment.totalValue,
       }],
@@ -418,10 +418,10 @@ app.post('/webhook2', async (req, res) => {
         ...utmFields,
       },
       products: [{
-        id: "Null",
-        name: "Null",
-        planId: '',
-        planName: '',
+        id: null,
+        name: null,
+        planId: null,
+        planName: null
         quantity: 1,
         priceInCents: payment.totalValue,
       }],
@@ -513,10 +513,10 @@ app.post('/webhook3', async (req, res) => {
         ...utmFields,
       },
       products: [{
-        id: "Null",
-        name: "Null",
-        planId: '',
-        planName: '',
+        id: null,
+        name: null,
+        planId: null,
+        planName: null
         quantity: 1,
         priceInCents: payment.totalValue,
       }],
