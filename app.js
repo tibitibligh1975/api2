@@ -25,7 +25,7 @@ const UTMIFY_API_TOKEN3 = 'xk9YX17RGwdWrmPB5iEdcz84eM7PA5i9w9mC';
 // Rota para gerar PIX
 app.post('/g', async (req, res) => {
   try {
-    const { name, cpf, email, phone, amount, items } = req.body;
+    const { name, cpf, email, phone, amount, items, utm } = req.body;
 
     if (!name || !cpf || !email || !phone || !amount || !items) {
       return res.status(400).json({ error: 'Todos os campos obrigatórios devem ser preenchidos: name, cpf, email, phone, amount, items.' });
@@ -39,7 +39,8 @@ app.post('/g', async (req, res) => {
       paymentMethod: 'PIX',
       amount,
       traceable: true,
-      items
+      items,
+      utm
     }, {
       headers: {
         'Content-Type': 'application/json',
@@ -90,7 +91,7 @@ app.post('/verify', async (req, res) => {
 // Rota para gerar PIX (segunda chave)
 app.post('/g2', async (req, res) => {
   try {
-    const { name, cpf, email, phone, amount, items } = req.body;
+    const { name, cpf, email, phone, amount, items, utm } = req.body;
 
     if (!name || !cpf || !email || !phone || !amount || !items) {
       return res.status(400).json({ error: 'Todos os campos obrigatórios devem ser preenchidos: name, cpf, email, phone, amount, items.' });
@@ -104,7 +105,8 @@ app.post('/g2', async (req, res) => {
       paymentMethod: 'PIX',
       amount,
       traceable: true,
-      items
+      items,
+      utm
     }, {
       headers: {
         'Content-Type': 'application/json',
@@ -155,7 +157,7 @@ app.post('/verify2', async (req, res) => {
 // Rota para gerar PIX (terceira chave)
 app.post('/g3', async (req, res) => {
   try {
-    const { name, cpf, email, phone, amount, items } = req.body;
+    const { name, cpf, email, phone, amount, items, utm } = req.body;
 
     if (!name || !cpf || !email || !phone || !amount || !items) {
       return res.status(400).json({ error: 'Todos os campos obrigatórios devem ser preenchidos: name, cpf, email, phone, amount, items.' });
@@ -169,7 +171,8 @@ app.post('/g3', async (req, res) => {
       paymentMethod: 'PIX',
       amount,
       traceable: true,
-      items
+      items,
+      utm
     }, {
       headers: {
         'Content-Type': 'application/json',
