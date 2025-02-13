@@ -326,7 +326,7 @@ app.post('/webhook', async (req, res) => {
         id: null,
         name: null,
         planId: null,
-        planName: null
+        planName: null,
         quantity: 1,
         priceInCents: payment.totalValue,
       }],
@@ -421,7 +421,7 @@ app.post('/webhook2', async (req, res) => {
         id: null,
         name: null,
         planId: null,
-        planName: null
+        planName: null,
         quantity: 1,
         priceInCents: payment.totalValue,
       }],
@@ -516,7 +516,7 @@ app.post('/webhook3', async (req, res) => {
         id: null,
         name: null,
         planId: null,
-        planName: null
+        planName: null,
         quantity: 1,
         priceInCents: payment.totalValue,
       }],
