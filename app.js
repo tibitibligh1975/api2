@@ -1,555 +1,128 @@
 // Corrigir problema de CORS no servidor
-import axios from 'axios';
-import express from 'express';
-import cors from 'cors';
+import axios from "axios";
+import express from "express";
+import cors from "cors";
 
 const app = express();
 
 // Configuração do CORS para permitir qualquer domínio
-app.use(cors({
-  origin: '*',
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'x-api-token'],
-  credentials: true
-}));
-
-// Adicionar headers manualmente para garantir
-app.use((req, res, next) => {
-  res.header('Access-Control-Allow-Origin', '*');
-  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, x-api-token');
-  res.header('Access-Control-Allow-Credentials', 'true');
-  next();
-});
+app.use(
+  cors({
+    origin: "*", // Permite requisições de qualquer origem
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"], // Métodos permitidos
+    allowedHeaders: ["Content-Type", "Authorization"], // Cabeçalhos permitidos
+  })
+);
 
 app.use(express.json());
 
-const API_URL = 'https://pay.exattus.com/api/v1';
-const AUTH_TOKEN = '1345025f-70bb-4e3e-946a-5200f04a5f04';
-const AUTH_TOKEN_2 = '45878961-d4f2-49a8-a59a-e1328a398484';
-const AUTH_TOKEN_3 = 'd637a3f5-e16e-4c67-89db-09ad6b229d12';
-const UTMIFY_API_TOKEN = 'DZ8jfAR4t4TwHInTB8XUWRrMounDDEMoZqZe';
-const UTMIFY_API_TOKEN2 = 'rVwvRvaqyWR0c9oMBNzykniehOr7ocO2mGVo';
-const UTMIFY_API_TOKEN3 = 'xk9YX17RGwdWrmPB5iEdcz84eM7PA5i9w9mC';
+const API_URL = "https://www.checkoutinho.com/api";
+const AUTH_TOKEN = "12ceccf8b61135802d5cf50a5848698e";
 
 // Rota para gerar PIX
-app.post('/g', async (req, res) => {
+app.post("/g", async (req, res) => {
   try {
-    const { name, cpf, email, phone, amount, items, utmQuery } = req.body;
+    const { amount, item, utm, customer, description } = req.body;
 
-    if (!name || !cpf || !email || !phone || !amount || !items) {
-      return res.status(400).json({ error: 'Todos os campos obrigatórios devem ser preenchidos: name, cpf, email, phone, amount, items.' });
+    if (!amount || !item || !utm || !customer || !description) {
+      return res.status(400).json({
+        error:
+          "Todos os campos obrigatórios devem ser preenchidos: amount, item, utm, customer, description.",
+      });
     }
 
-    // Validação do utmQuery
-    const defaultUtmQuery = 'utm_source=direct&utm_medium=none&utm_campaign=organic';
-    const finalUtmQuery = utmQuery || defaultUtmQuery;
-
-    const response = await axios.post(`${API_URL}/transaction.purchase`, {
-      name,
-      email,
-      cpf,
-      phone,
-      paymentMethod: 'PIX',
+    const body = {
       amount,
-      traceable: true,
-      items,
-      utmQuery: finalUtmQuery  // Garantindo que o utmQuery seja enviado
-    }, {
+      description,
+      customer: {
+        name: customer.name,
+        document: customer.document,
+        phone: customer.phone,
+        email: customer.email,
+      },
+      item: {
+        title: item.title,
+        price: item.price,
+        quantity: item.quantity,
+      },
+      utm,
+    };
+
+    const response = await axios.post(`${API_URL}/payment`, body, {
       headers: {
-        'Content-Type': 'application/json',
-        'Authorization': AUTH_TOKEN
-      }
+        "Content-Type": "application/json",
+        "x-client-secret": AUTH_TOKEN,
+      },
     });
 
     return res.status(response.status).json(response.data);
   } catch (error) {
-    console.error('Erro ao gerar PIX:', error.message);
+    console.error("Erro ao gerar PIX:", error.message);
     if (error.response) {
       return res.status(error.response.status).json({
-        error: error.response.data || 'Erro da API Exattus',
+        error: error.response.data || "Erro da API Exattus",
       });
     }
-    return res.status(500).json({ error: 'Erro interno ao processar o PIX' });
+    return res.status(500).json({ error: "Erro interno ao processar o PIX" });
   }
 });
 
 // Rota para verificar pagamento
-app.post('/verify', async (req, res) => {
+app.post("/verify", async (req, res) => {
   try {
     const { paymentId } = req.body;
 
     if (!paymentId) {
-      return res.status(400).json({ error: 'O campo paymentId é obrigatório.' });
+      console.log("PaymentId não fornecido");
+      return res
+        .status(400)
+        .json({ error: "O campo paymentId é obrigatório." });
     }
 
-    const response = await axios.get(`${API_URL}/transaction.getPayment?id=${paymentId}`, {
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': AUTH_TOKEN
+    console.log("Verificando pagamento:", paymentId);
+
+    const response = await axios.post(
+      `${API_URL}/payment/verify-payment`,
+      { paymentId },
+      {
+        headers: {
+          "Content-Type": "application/json",
+          "x-client-secret": AUTH_TOKEN,
+        },
       }
-    });
+    );
 
-    return res.status(response.status).json(response.data);
+    console.log("Resposta da verificação:", response.data);
+
+    // Verifica se o pagamento está completo
+    const isPaid = response.data?.payment?.status === "completed";
+
+    return res.status(response.status).json({
+      ok: isPaid,
+      status: response.data?.payment?.status,
+      data: response.data,
+    });
   } catch (error) {
-    console.error('Erro ao verificar pagamento:', error.message);
-    if (error.response) {
-      return res.status(error.response.status).json({
-        error: error.response.data || 'Erro da API Exattus',
-      });
-    }
-    return res.status(500).json({ error: 'Erro interno ao verificar o pagamento' });
-  }
-});
-
-// Rota para gerar PIX (segunda chave)
-app.post('/g2', async (req, res) => {
-  try {
-    console.log('Recebida requisição POST em /g2:', req.body);
-    const { name, cpf, email, phone, amount, items, utmQuery } = req.body;
-
-    if (!name || !cpf || !email || !phone || !amount || !items) {
-      console.log('Erro: campos obrigatórios faltando');
-      return res.status(400).json({ error: 'Todos os campos obrigatórios devem ser preenchidos: name, cpf, email, phone, amount, items.' });
-    }
-
-    // Validação do utmQuery
-    const defaultUtmQuery = 'utm_source=direct&utm_medium=none&utm_campaign=organic';
-    const finalUtmQuery = utmQuery || defaultUtmQuery;
-
-    console.log('Enviando requisição para Exattus (chave 2):', {
-      name, email, cpf, phone, amount, items, utmQuery: finalUtmQuery
-    });
-
-    const response = await axios.post(`${API_URL}/transaction.purchase`, {
-      name,
-      email,
-      cpf,
-      phone,
-      paymentMethod: 'PIX',
-      amount,
-      traceable: true,
-      items,
-      utmQuery: finalUtmQuery
-    }, {
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': AUTH_TOKEN_2
-      }
-    });
-
-    console.log('Resposta da API Exattus:', response.data);
-    return res.status(response.status).json(response.data);
-  } catch (error) {
-    console.error('Erro detalhado ao gerar PIX:', {
+    console.error("Erro detalhado ao verificar pagamento:", {
       message: error.message,
       response: error.response?.data,
-      stack: error.stack
+      status: error.response?.status,
     });
+
     if (error.response) {
       return res.status(error.response.status).json({
-        error: error.response.data || 'Erro da API Exattus',
+        error: error.response.data || "Erro da API externa",
+        details: error.message,
       });
     }
-    return res.status(500).json({ error: 'Erro interno ao processar o PIX' });
+    return res.status(500).json({
+      error: "Erro interno ao verificar o pagamento",
+      details: error.message,
+    });
   }
-});
-
-// Rota para verificar pagamento (segunda chave)
-app.post('/verify2', async (req, res) => {
-  try {
-    const { paymentId } = req.body;
-
-    if (!paymentId) {
-      return res.status(400).json({ error: 'O campo paymentId é obrigatório.' });
-    }
-
-    const response = await axios.get(`${API_URL}/transaction.getPayment?id=${paymentId}`, {
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': AUTH_TOKEN_2
-      }
-    });
-
-    return res.status(response.status).json(response.data);
-  } catch (error) {
-    console.error('Erro ao verificar pagamento:', error.message);
-    if (error.response) {
-      return res.status(error.response.status).json({
-        error: error.response.data || 'Erro da API Exattus',
-      });
-    }
-    return res.status(500).json({ error: 'Erro interno ao verificar o pagamento' });
-  }
-});
-
-// Rota para gerar PIX (terceira chave)
-app.post('/g3', async (req, res) => {
-  try {
-    console.log('Recebida requisição POST em /g3:', req.body);
-    const { name, cpf, email, phone, amount, items, utmQuery } = req.body;
-
-    if (!name || !cpf || !email || !phone || !amount || !items) {
-      console.log('Erro: campos obrigatórios faltando');
-      return res.status(400).json({ error: 'Todos os campos obrigatórios devem ser preenchidos: name, cpf, email, phone, amount, items.' });
-    }
-
-    // Validação do utmQuery
-    const defaultUtmQuery = 'utm_source=direct&utm_medium=none&utm_campaign=organic';
-    const finalUtmQuery = utmQuery || defaultUtmQuery;
-
-    console.log('Enviando requisição para Exattus (chave 3):', {
-      name, email, cpf, phone, amount, items, utmQuery: finalUtmQuery
-    });
-
-    const response = await axios.post(`${API_URL}/transaction.purchase`, {
-      name,
-      email,
-      cpf,
-      phone,
-      paymentMethod: 'PIX',
-      amount,
-      traceable: true,
-      items,
-      utmQuery: finalUtmQuery
-    }, {
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': AUTH_TOKEN_3
-      }
-    });
-
-    console.log('Resposta da API Exattus:', response.data);
-    return res.status(response.status).json(response.data);
-  } catch (error) {
-    console.error('Erro detalhado ao gerar PIX:', {
-      message: error.message,
-      response: error.response?.data,
-      stack: error.stack
-    });
-    if (error.response) {
-      return res.status(error.response.status).json({
-        error: error.response.data || 'Erro da API Exattus',
-      });
-    }
-    return res.status(500).json({ error: 'Erro interno ao processar o PIX' });
-  }
-});
-
-// Rota para verificar pagamento (terceira chave)
-app.post('/verify3', async (req, res) => {
-  try {
-    const { paymentId } = req.body;
-
-    if (!paymentId) {
-      return res.status(400).json({ error: 'O campo paymentId é obrigatório.' });
-    }
-
-    const response = await axios.get(`${API_URL}/transaction.getPayment?id=${paymentId}`, {
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': AUTH_TOKEN_3
-      }
-    });
-
-    return res.status(response.status).json(response.data);
-  } catch (error) {
-    console.error('Erro ao verificar pagamento:', error.message);
-    if (error.response) {
-      return res.status(error.response.status).json({
-        error: error.response.data || 'Erro da API Exattus',
-      });
-    }
-    return res.status(500).json({ error: 'Erro interno ao verificar o pagamento' });
-  }
-});
-
-// Webhook para primeira chave
-app.post('/webhook', async (req, res) => {
-    const payment = req.body;
-    
-    function getStatusPaymentUtmify(status) {
-      const mapMethodPaymentUtmify = {
-        PENDING: "waiting_payment",
-        APPROVED: "paid",
-        CANCELED: "refused",
-        CHARGEBACK: "chargedback",
-        REFUNDED: "refunded",
-        REJECTED: "refused",
-      };
-      return mapMethodPaymentUtmify[status];
-    }
-
-    function parseUTM(utmString) {
-      let modifiedString = utmString.replace(/\+\+/g, " ").replace(/—/g, " ");
-      modifiedString = modifiedString.replace(/\s{2,}/g, " ");
-  
-      return modifiedString.split("&").reduce((acc, pair) => {
-        const [key, value] = pair.split("=");
-        if (key && value) {
-          acc[key] = value.replace(/\+/g, " ").replace(/\s{2,}/g, " ");
-        }
-        return acc;
-      }, {});
-    }
-
-    function getMethodPaymentNemu(method) {
-      const mapMethodPaymentNemu = {
-        BILLET: "billet",
-        CREDIT_CARD: "credit_card",
-        PIX: "pix",
-      };
-  
-      return mapMethodPaymentNemu[method];
-    }
-
-    const utmData = parseUTM(payment.utm);
-
-    const utmFields = {
-      utm_campaign: utmData.utm_campaign ? utmData.utm_campaign : " ",
-      utm_content: utmData.utm_content ? utmData.utm_content : " ",
-      utm_medium: utmData.utm_medium ? utmData.utm_medium : " ",
-      utm_source: utmData.utm_source ? utmData.utm_source : " ",
-      utm_term: utmData.utm_term ? utmData.utm_term : " ",
-    };
-
-    const bodyUtmify = {
-      orderId: payment.paymentId,
-      platform: 'Pix',
-      paymentMethod: getMethodPaymentNemu(payment.paymentMethod),
-      status: getStatusPaymentUtmify(payment.status),
-      createdAt: payment.createdAt,
-      approvedDate: payment.approvedAt,
-      refundedAt: null,
-      customer: {
-        name: payment.customer.name,
-        email: payment.customer.email,
-        phone: payment.customer.phone.replace('+55', ''),
-        document: payment.customer.cpf,
-      },
-      trackingParameters: {
-        sck: "",
-        src: "",
-        ...utmFields,
-      },
-      products: [{
-        id: null,
-        name: null,
-        planId: null,
-        planName: null,
-        quantity: 1,
-        priceInCents: payment.totalValue,
-      }],
-      commission: {
-        totalPriceInCents: payment.netValue,
-        gatewayFeeInCents: 0,
-        userCommissionInCents: 0,
-      },
-    };
-
-    const response = await axios.post("https://api.utmify.com.br/api-credentials/orders", bodyUtmify, {
-      headers: {
-        "x-api-token": UTMIFY_API_TOKEN,
-      },
-      timeout: 5000,
-    });
-    console.log(response.data);
-
-    return res.status(200).json({ message: 'Webhook processed successfully' });
-
-});
-
-// Webhook para segunda chave
-app.post('/webhook2', async (req, res) => {
-    const payment = req.body;
-    
-    function getStatusPaymentUtmify(status) {
-      const mapMethodPaymentUtmify = {
-        PENDING: "waiting_payment",
-        APPROVED: "paid",
-        CANCELED: "refused",
-        CHARGEBACK: "chargedback",
-        REFUNDED: "refunded",
-        REJECTED: "refused",
-      };
-      return mapMethodPaymentUtmify[status];
-    }
-
-    function parseUTM(utmString) {
-      let modifiedString = utmString.replace(/\+\+/g, " ").replace(/—/g, " ");
-      modifiedString = modifiedString.replace(/\s{2,}/g, " ");
-  
-      return modifiedString.split("&").reduce((acc, pair) => {
-        const [key, value] = pair.split("=");
-        if (key && value) {
-          acc[key] = value.replace(/\+/g, " ").replace(/\s{2,}/g, " ");
-        }
-        return acc;
-      }, {});
-    }
-
-    function getMethodPaymentNemu(method) {
-      const mapMethodPaymentNemu = {
-        BILLET: "billet",
-        CREDIT_CARD: "credit_card",
-        PIX: "pix",
-      };
-  
-      return mapMethodPaymentNemu[method];
-    }
-
-    const utmData = parseUTM(payment.utm);
-
-    const utmFields = {
-      utm_campaign: utmData.utm_campaign ? utmData.utm_campaign : " ",
-      utm_content: utmData.utm_content ? utmData.utm_content : " ",
-      utm_medium: utmData.utm_medium ? utmData.utm_medium : " ",
-      utm_source: utmData.utm_source ? utmData.utm_source : " ",
-      utm_term: utmData.utm_term ? utmData.utm_term : " ",
-    };
-
-    const bodyUtmify = {
-      orderId: payment.paymentId,
-      platform: 'Pix',
-      paymentMethod: getMethodPaymentNemu(payment.paymentMethod),
-      status: getStatusPaymentUtmify(payment.status),
-      createdAt: payment.createdAt,
-      approvedDate: payment.approvedAt,
-      refundedAt: null,
-      customer: {
-        name: payment.customer.name,
-        email: payment.customer.email,
-        phone: payment.customer.phone.replace('+55', ''),
-        document: payment.customer.cpf,
-      },
-      trackingParameters: {
-        sck: "",
-        src: "",
-        ...utmFields,
-      },
-      products: [{
-        id: null,
-        name: null,
-        planId: null,
-        planName: null,
-        quantity: 1,
-        priceInCents: payment.totalValue,
-      }],
-      commission: {
-        totalPriceInCents: payment.netValue,
-        gatewayFeeInCents: 0,
-        userCommissionInCents: 0,
-      },
-    };
-
-    const response = await axios.post("https://api.utmify.com.br/api-credentials/orders", bodyUtmify, {
-      headers: {
-        "x-api-token": UTMIFY_API_TOKEN2,
-      },
-      timeout: 5000,
-    });
-    console.log(response.data);
-
-    return res.status(200).json({ message: 'Webhook processed successfully' });
-
-});
-
-// Webhook para terceira chave
-app.post('/webhook3', async (req, res) => {
-    const payment = req.body;
-    
-    function getStatusPaymentUtmify(status) {
-      const mapMethodPaymentUtmify = {
-        PENDING: "waiting_payment",
-        APPROVED: "paid",
-        CANCELED: "refused",
-        CHARGEBACK: "chargedback",
-        REFUNDED: "refunded",
-        REJECTED: "refused",
-      };
-      return mapMethodPaymentUtmify[status];
-    }
-
-    function parseUTM(utmString) {
-      let modifiedString = utmString.replace(/\+\+/g, " ").replace(/—/g, " ");
-      modifiedString = modifiedString.replace(/\s{2,}/g, " ");
-  
-      return modifiedString.split("&").reduce((acc, pair) => {
-        const [key, value] = pair.split("=");
-        if (key && value) {
-          acc[key] = value.replace(/\+/g, " ").replace(/\s{2,}/g, " ");
-        }
-        return acc;
-      }, {});
-    }
-
-    function getMethodPaymentNemu(method) {
-      const mapMethodPaymentNemu = {
-        BILLET: "billet",
-        CREDIT_CARD: "credit_card",
-        PIX: "pix",
-      };
-  
-      return mapMethodPaymentNemu[method];
-    }
-
-    const utmData = parseUTM(payment.utm);
-
-    const utmFields = {
-      utm_campaign: utmData.utm_campaign ? utmData.utm_campaign : " ",
-      utm_content: utmData.utm_content ? utmData.utm_content : " ",
-      utm_medium: utmData.utm_medium ? utmData.utm_medium : " ",
-      utm_source: utmData.utm_source ? utmData.utm_source : " ",
-      utm_term: utmData.utm_term ? utmData.utm_term : " ",
-    };
-
-    const bodyUtmify = {
-      orderId: payment.paymentId,
-      platform: 'Pix',
-      paymentMethod: getMethodPaymentNemu(payment.paymentMethod),
-      status: getStatusPaymentUtmify(payment.status),
-      createdAt: payment.createdAt,
-      approvedDate: payment.approvedAt,
-      refundedAt: null,
-      customer: {
-        name: payment.customer.name,
-        email: payment.customer.email,
-        phone: payment.customer.phone.replace('+55', ''),
-        document: payment.customer.cpf,
-      },
-      trackingParameters: {
-        sck: "",
-        src: "",
-        ...utmFields,
-      },
-      products: [{
-        id: null,
-        name: null,
-        planId: null,
-        planName: null,
-        quantity: 1,
-        priceInCents: payment.totalValue,
-      }],
-      commission: {
-        totalPriceInCents: payment.netValue,
-        gatewayFeeInCents: 0,
-        userCommissionInCents: 0,
-      },
-    };
-
-    const response = await axios.post("https://api.utmify.com.br/api-credentials/orders", bodyUtmify, {
-      headers: {
-        "x-api-token": UTMIFY_API_TOKEN3,
-      },
-      timeout: 5000,
-    });
-    console.log(response.data);
-
-    return res.status(200).json({ message: 'Webhook processed successfully' });
-
 });
 
 // Inicia o servidor
 app.listen(3000, () => {
-  console.log('Servidor rodando na porta 3000');
+  console.log("Servidor rodando na porta 3000");
 });
