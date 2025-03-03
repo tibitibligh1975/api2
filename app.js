@@ -21,7 +21,7 @@ const AUTH_TOKEN = "10f1f50864cb7732b542f3513351d6ee";
 const AUTH_TOKEN2 = "25913bfa8d2d05fe261656a0a70bb99f";
 const AUTH_TOKEN3 = "95786ca07a623f67305d339aa69ab44b";
 const AUTH_TOKEN4 = "1a8a431fc55d98279d4e2e6eaaab24eb";
-const AUTH_TOKEN5 = "9708b79da912d89141ea4749d28c2e67";
+const AUTH_TOKEN5 = "4168aca6dbb438418699165b7c1a6f21";
 const AUTH_TOKEN6 = "88cbf7aa0dc118f6299a7fb90a56439a";
 const AUTH_TOKEN7 = "457e862b12912314e079d3b65bd3ca1c";
 
@@ -437,7 +437,7 @@ app.post("/verify4", async (req, res) => {
   }
 });
 
-// Rota para gerar PIX5 - Joseber
+// Rota para gerar PIX5
 app.post("/g5", async (req, res) => {
   try {
     const { amount, item, utm, customer, description } = req.body;
@@ -485,7 +485,7 @@ app.post("/g5", async (req, res) => {
   }
 });
 
-// Rota para verificar pagamento5 - Joseber
+// Rota para verificar pagamento5
 app.post("/verify5", async (req, res) => {
   try {
     const { paymentId } = req.body;
