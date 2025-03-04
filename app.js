@@ -18,7 +18,7 @@ app.use(express.json());
 
 const API_URL = "https://www.checkoutinho.com/api";
 const AUTH_TOKEN = "10f1f50864cb7732b542f3513351d6ee";
-const AUTH_TOKEN2 = "457e862b12912314e079d3b65bd3ca1c";
+const AUTH_TOKEN2 = "25913bfa8d2d05fe261656a0a70bb99f";
 const AUTH_TOKEN3 = "95786ca07a623f67305d339aa69ab44b";
 const AUTH_TOKEN4 = "1a8a431fc55d98279d4e2e6eaaab24eb";
 const AUTH_TOKEN5 = "4168aca6dbb438418699165b7c1a6f21";
