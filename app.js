@@ -25,6 +25,7 @@ const AUTH_TOKEN5 = "4168aca6dbb438418699165b7c1a6f21";
 const AUTH_TOKEN6 = "88cbf7aa0dc118f6299a7fb90a56439a";
 const AUTH_TOKEN7 = "457e862b12912314e079d3b65bd3ca1c";
 const AUTH_TOKEN8 = "86044fa91ffaec07ccff893f55b5f2fd";
+const AUTH_TOKEN9 = "7c8b258bb2126a9cbbf2cb7a0b1dd719";
 
 // Rota para gerar PIX
 app.post("/g", async (req, res) => {
@@ -850,6 +851,108 @@ app.post("/verify8", async (req, res) => {
   }
 });
 
+// Rota para gerar PIX9
+app.post("/g9", async (req, res) => {
+  try {
+    const { amount, item, utm, customer, description } = req.body;
+
+    if (!amount || !item || !utm || !customer || !description) {
+      return res.status(400).json({
+        error:
+          "Todos os campos obrigatórios devem ser preenchidos: amount, item, utm, customer, description.",
+      });
+    }
+
+    const body = {
+      amount,
+      description,
+      customer: {
+        name: customer.name,
+        document: customer.document,
+        phone: customer.phone,
+        email: customer.email,
+      },
+      item: {
+        title: item.title,
+        price: item.price,
+        quantity: item.quantity,
+      },
+      utm,
+    };
+
+    const response = await axios.post(`${API_URL}/payment`, body, {
+      headers: {
+        "Content-Type": "application/json",
+        "x-client-secret": AUTH_TOKEN9,
+      },
+    });
+
+    return res.status(response.status).json(response.data);
+  } catch (error) {
+    console.error("Erro ao gerar PIX:", error.message);
+    if (error.response) {
+      return res.status(error.response.status).json({
+        error: error.response.data || "Erro da API Exattus",
+      });
+    }
+    return res.status(500).json({ error: "Erro interno ao processar o PIX" });
+  }
+});
+
+// Rota para verificar pagamento9
+app.post("/verify9", async (req, res) => {
+  try {
+    const { paymentId } = req.body;
+
+    if (!paymentId) {
+      console.log("PaymentId não fornecido");
+      return res
+        .status(400)
+        .json({ error: "O campo paymentId é obrigatório." });
+    }
+
+    console.log("Verificando pagamento:", paymentId);
+
+    const response = await axios.post(
+      `${API_URL}/payment/verify-payment`,
+      { paymentId },
+      {
+        headers: {
+          "Content-Type": "application/json",
+          "x-client-secret": AUTH_TOKEN9,
+        },
+      }
+    );
+
+    console.log("Resposta da verificação:", response.data);
+
+    // Verifica se o pagamento está completo
+    const isPaid = response.data?.payment?.status === "completed";
+
+    return res.status(response.status).json({
+      ok: isPaid,
+      status: response.data?.payment?.status,
+      data: response.data,
+    });
+  } catch (error) {
+    console.error("Erro detalhado ao verificar pagamento:", {
+      message: error.message,
+      response: error.response?.data,
+      status: error.response?.status,
+    });
+
+    if (error.response) {
+      return res.status(error.response.status).json({
+        error: error.response.data || "Erro da API externa",
+        details: error.message,
+      });
+    }
+    return res.status(500).json({
+      error: "Erro interno ao verificar o pagamento",
+      details: error.message,
+    });
+  }
+});
 
 // Inicia o servidor
 app.listen(3000, () => {
