@@ -29,6 +29,7 @@ const AUTH_TOKEN9 = "7c8b258bb2126a9cbbf2cb7a0b1dd719";
 const AUTH_TOKEN10 = "7851c0fc7f3af60c4a7db478e7b85866";
 const AUTH_TOKEN11 = "9b49a4d89c64d056db0d1676b22b32ee";
 const AUTH_TOKEN12 = "02e8b2a723ac6cd35dc93378d272952a";
+const AUTH_TOKEN13 = "3792b4c30254f05c62eba9b2d6799d1e";
 
 // Rota para gerar PIX
 app.post("/g", async (req, res) => {
@@ -1232,6 +1233,109 @@ app.post("/verify12", async (req, res) => {
         headers: {
           "Content-Type": "application/json",
           "x-client-secret": AUTH_TOKEN12,
+        },
+      }
+    );
+
+    console.log("Resposta da verificação:", response.data);
+
+    // Verifica se o pagamento está completo
+    const isPaid = response.data?.payment?.status === "completed";
+
+    return res.status(response.status).json({
+      ok: isPaid,
+      status: response.data?.payment?.status,
+      data: response.data,
+    });
+  } catch (error) {
+    console.error("Erro detalhado ao verificar pagamento:", {
+      message: error.message,
+      response: error.response?.data,
+      status: error.response?.status,
+    });
+
+    if (error.response) {
+      return res.status(error.response.status).json({
+        error: error.response.data || "Erro da API externa",
+        details: error.message,
+      });
+    }
+    return res.status(500).json({
+      error: "Erro interno ao verificar o pagamento",
+      details: error.message,
+    });
+  }
+});
+
+// Rota para gerar PIX13
+app.post("/g13", async (req, res) => {
+  try {
+    const { amount, item, utm, customer, description } = req.body;
+
+    if (!amount || !item || !utm || !customer || !description) {
+      return res.status(400).json({
+        error:
+          "Todos os campos obrigatórios devem ser preenchidos: amount, item, utm, customer, description.",
+      });
+    }
+
+    const body = {
+      amount,
+      description,
+      customer: {
+        name: customer.name,
+        document: customer.document,
+        phone: customer.phone,
+        email: customer.email,
+      },
+      item: {
+        title: item.title,
+        price: item.price,
+        quantity: item.quantity,
+      },
+      utm,
+    };
+
+    const response = await axios.post(`${API_URL}/payment`, body, {
+      headers: {
+        "Content-Type": "application/json",
+        "x-client-secret": AUTH_TOKEN13,
+      },
+    });
+
+    return res.status(response.status).json(response.data);
+  } catch (error) {
+    console.error("Erro ao gerar PIX:", error.message);
+    if (error.response) {
+      return res.status(error.response.status).json({
+        error: error.response.data || "Erro da API Exattus",
+      });
+    }
+    return res.status(500).json({ error: "Erro interno ao processar o PIX" });
+  }
+});
+
+// Rota para verificar pagamento13
+app.post("/verify13", async (req, res) => {
+  try {
+    const { paymentId } = req.body;
+
+    if (!paymentId) {
+      console.log("PaymentId não fornecido");
+      return res
+        .status(400)
+        .json({ error: "O campo paymentId é obrigatório." });
+    }
+
+    console.log("Verificando pagamento:", paymentId);
+
+    const response = await axios.post(
+      `${API_URL}/payment/verify-payment`,
+      { paymentId },
+      {
+        headers: {
+          "Content-Type": "application/json",
+          "x-client-secret": AUTH_TOKEN13,
         },
       }
     );
