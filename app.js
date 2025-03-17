@@ -70,11 +70,11 @@ const G13_ROUTES_CONFIG = {
   distributions: [
     {
       token: AUTH_TOKEN13, // Token principal para /g13
-      percentage: 90,
+      percentage: 20,
     },
     {
       token: AUTH_TOKEN7,
-      percentage: 10,
+      percentage: 80,
     },
   ],
 };
