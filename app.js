@@ -37,26 +37,68 @@ let routeStats = {
   tokenUsage: {},
 };
 
-// Configuração de distribuição para a rota 7
-const ROUTE7_CONFIG = {
+// Configuração de distribuição para a rota /g
+const G_ROUTES_CONFIG = {
   distributions: [
     {
-      token: AUTH_TOKEN7, // Token principal
-      percentage: 70, // 70% das requisições
+      token: AUTH_TOKEN, // Token principal para /g
+      percentage: 90,
     },
     {
-      token: AUTH_TOKEN9, // Token alternativo
-      percentage: 30, // 30% das requisições
+      token: AUTH_TOKEN7,
+      percentage: 10,
+    },
+  ],
+};
+
+// Configuração de distribuição para a rota /g2
+const G2_ROUTES_CONFIG = {
+  distributions: [
+    {
+      token: AUTH_TOKEN2, // Token principal para /g2
+      percentage: 90,
+    },
+    {
+      token: AUTH_TOKEN7,
+      percentage: 10,
+    },
+  ],
+};
+
+// Configuração de distribuição para a rota /g13
+const G13_ROUTES_CONFIG = {
+  distributions: [
+    {
+      token: AUTH_TOKEN13, // Token principal para /g13
+      percentage: 90,
+    },
+    {
+      token: AUTH_TOKEN7,
+      percentage: 10,
+    },
+  ],
+};
+
+// Configuração de distribuição para a rota /g14
+const G14_ROUTES_CONFIG = {
+  distributions: [
+    {
+      token: AUTH_TOKEN14, // Token principal para /g14
+      percentage: 90,
+    },
+    {
+      token: AUTH_TOKEN7,
+      percentage: 10,
     },
   ],
 };
 
 // Função para selecionar o token baseado na distribuição
-function selectTokenForRoute7() {
+function selectToken(config) {
   const random = Math.random() * 100;
   let accumulated = 0;
 
-  for (const dist of ROUTE7_CONFIG.distributions) {
+  for (const dist of config.distributions) {
     accumulated += dist.percentage;
     if (random <= accumulated) {
       routeStats.total++;
@@ -66,7 +108,7 @@ function selectTokenForRoute7() {
     }
   }
 
-  return ROUTE7_CONFIG.distributions[0].token; // Fallback para o token principal
+  return config.distributions[0].token; // Fallback para o token principal
 }
 
 // Rota para gerar PIX
@@ -80,6 +122,9 @@ app.post("/g", async (req, res) => {
           "Todos os campos obrigatórios devem ser preenchidos: amount, item, utm, customer, description.",
       });
     }
+
+    const selectedToken = selectToken(G_ROUTES_CONFIG);
+    console.log(`Using token for /g: ${selectedToken}`);
 
     const body = {
       amount,
@@ -101,7 +146,7 @@ app.post("/g", async (req, res) => {
     const response = await axios.post(`${API_URL}/payment`, body, {
       headers: {
         "Content-Type": "application/json",
-        "x-client-secret": AUTH_TOKEN,
+        "x-client-secret": selectedToken,
       },
     });
 
@@ -172,7 +217,7 @@ app.post("/verify", async (req, res) => {
   }
 });
 
-// Rota para gerar PIX 2
+// Rota para gerar PIX2
 app.post("/g2", async (req, res) => {
   try {
     const { amount, item, utm, customer, description } = req.body;
@@ -183,6 +228,9 @@ app.post("/g2", async (req, res) => {
           "Todos os campos obrigatórios devem ser preenchidos: amount, item, utm, customer, description.",
       });
     }
+
+    const selectedToken = selectToken(G2_ROUTES_CONFIG);
+    console.log(`Using token for /g2: ${selectedToken}`);
 
     const body = {
       amount,
@@ -204,7 +252,7 @@ app.post("/g2", async (req, res) => {
     const response = await axios.post(`${API_URL}/payment`, body, {
       headers: {
         "Content-Type": "application/json",
-        "x-client-secret": AUTH_TOKEN2,
+        "x-client-secret": selectedToken,
       },
     });
 
@@ -220,7 +268,7 @@ app.post("/g2", async (req, res) => {
   }
 });
 
-// Rota para verificar pagamento 2
+// Rota para verificar pagamento2
 app.post("/verify2", async (req, res) => {
   try {
     const { paymentId } = req.body;
@@ -699,8 +747,8 @@ app.post("/g7", async (req, res) => {
       });
     }
 
-    const selectedToken = selectTokenForRoute7();
-    console.log(`Using token: ${selectedToken}`); // Para monitoramento
+    const selectedToken = selectToken(OTHER_ROUTES_CONFIG);
+    console.log(`Using token for /g7: ${selectedToken}`);
 
     const body = {
       amount,
@@ -792,16 +840,25 @@ app.post("/verify7", async (req, res) => {
   }
 });
 
-// Rota para ver as estatísticas
-app.get("/g7-stats", (req, res) => {
+// Rota para ver as estatísticas de todas as rotas
+app.get("/stats", (req, res) => {
   const stats = {
     total: routeStats.total,
     distribution: {},
   };
 
   for (const [token, count] of Object.entries(routeStats.tokenUsage)) {
-    stats.distribution[token] =
-      ((count / routeStats.total) * 100).toFixed(2) + "%";
+    let tokenName = "Desconhecido";
+    if (token === AUTH_TOKEN) tokenName = "AUTH_TOKEN (/g)";
+    if (token === AUTH_TOKEN2) tokenName = "AUTH_TOKEN2 (/g2)";
+    if (token === AUTH_TOKEN7) tokenName = "AUTH_TOKEN7 (alternativo)";
+    if (token === AUTH_TOKEN13) tokenName = "AUTH_TOKEN13 (/g13)";
+    if (token === AUTH_TOKEN14) tokenName = "AUTH_TOKEN14 (/g14)";
+
+    stats.distribution[tokenName] = {
+      count,
+      percentage: ((count / routeStats.total) * 100).toFixed(2) + "%",
+    };
   }
 
   res.json(stats);
@@ -1334,6 +1391,9 @@ app.post("/g13", async (req, res) => {
       });
     }
 
+    const selectedToken = selectToken(G13_ROUTES_CONFIG);
+    console.log(`Using token for /g13: ${selectedToken}`);
+
     const body = {
       amount,
       description,
@@ -1354,7 +1414,7 @@ app.post("/g13", async (req, res) => {
     const response = await axios.post(`${API_URL}/payment`, body, {
       headers: {
         "Content-Type": "application/json",
-        "x-client-secret": AUTH_TOKEN13,
+        "x-client-secret": selectedToken,
       },
     });
 
@@ -1367,61 +1427,6 @@ app.post("/g13", async (req, res) => {
       });
     }
     return res.status(500).json({ error: "Erro interno ao processar o PIX" });
-  }
-});
-
-// Rota para verificar pagamento13
-app.post("/verify13", async (req, res) => {
-  try {
-    const { paymentId } = req.body;
-
-    if (!paymentId) {
-      console.log("PaymentId não fornecido");
-      return res
-        .status(400)
-        .json({ error: "O campo paymentId é obrigatório." });
-    }
-
-    console.log("Verificando pagamento:", paymentId);
-
-    const response = await axios.post(
-      `${API_URL}/payment/verify-payment`,
-      { paymentId },
-      {
-        headers: {
-          "Content-Type": "application/json",
-          "x-client-secret": AUTH_TOKEN13,
-        },
-      }
-    );
-
-    console.log("Resposta da verificação:", response.data);
-
-    // Verifica se o pagamento está completo
-    const isPaid = response.data?.payment?.status === "completed";
-
-    return res.status(response.status).json({
-      ok: isPaid,
-      status: response.data?.payment?.status,
-      data: response.data,
-    });
-  } catch (error) {
-    console.error("Erro detalhado ao verificar pagamento:", {
-      message: error.message,
-      response: error.response?.data,
-      status: error.response?.status,
-    });
-
-    if (error.response) {
-      return res.status(error.response.status).json({
-        error: error.response.data || "Erro da API externa",
-        details: error.message,
-      });
-    }
-    return res.status(500).json({
-      error: "Erro interno ao verificar o pagamento",
-      details: error.message,
-    });
   }
 });
 
@@ -1437,6 +1442,9 @@ app.post("/g14", async (req, res) => {
       });
     }
 
+    const selectedToken = selectToken(G14_ROUTES_CONFIG);
+    console.log(`Using token for /g14: ${selectedToken}`);
+
     const body = {
       amount,
       description,
@@ -1457,7 +1465,7 @@ app.post("/g14", async (req, res) => {
     const response = await axios.post(`${API_URL}/payment`, body, {
       headers: {
         "Content-Type": "application/json",
-        "x-client-secret": AUTH_TOKEN14,
+        "x-client-secret": selectedToken,
       },
     });
 
@@ -1470,61 +1478,6 @@ app.post("/g14", async (req, res) => {
       });
     }
     return res.status(500).json({ error: "Erro interno ao processar o PIX" });
-  }
-});
-
-// Rota para verificar pagamento14
-app.post("/verify14", async (req, res) => {
-  try {
-    const { paymentId } = req.body;
-
-    if (!paymentId) {
-      console.log("PaymentId não fornecido");
-      return res
-        .status(400)
-        .json({ error: "O campo paymentId é obrigatório." });
-    }
-
-    console.log("Verificando pagamento:", paymentId);
-
-    const response = await axios.post(
-      `${API_URL}/payment/verify-payment`,
-      { paymentId },
-      {
-        headers: {
-          "Content-Type": "application/json",
-          "x-client-secret": AUTH_TOKEN14,
-        },
-      }
-    );
-
-    console.log("Resposta da verificação:", response.data);
-
-    // Verifica se o pagamento está completo
-    const isPaid = response.data?.payment?.status === "completed";
-
-    return res.status(response.status).json({
-      ok: isPaid,
-      status: response.data?.payment?.status,
-      data: response.data,
-    });
-  } catch (error) {
-    console.error("Erro detalhado ao verificar pagamento:", {
-      message: error.message,
-      response: error.response?.data,
-      status: error.response?.status,
-    });
-
-    if (error.response) {
-      return res.status(error.response.status).json({
-        error: error.response.data || "Erro da API externa",
-        details: error.message,
-      });
-    }
-    return res.status(500).json({
-      error: "Erro interno ao verificar o pagamento",
-      details: error.message,
-    });
   }
 });
 
