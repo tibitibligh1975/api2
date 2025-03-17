@@ -32,6 +32,43 @@ const AUTH_TOKEN12 = "02e8b2a723ac6cd35dc93378d272952a";
 const AUTH_TOKEN13 = "3792b4c30254f05c62eba9b2d6799d1e";
 const AUTH_TOKEN14 = "3d0458078c33faf145e83e7d77e365ef";
 
+let routeStats = {
+  total: 0,
+  tokenUsage: {},
+};
+
+// Configuração de distribuição para a rota 7
+const ROUTE7_CONFIG = {
+  distributions: [
+    {
+      token: AUTH_TOKEN7, // Token principal
+      percentage: 70, // 70% das requisições
+    },
+    {
+      token: AUTH_TOKEN14, // Token alternativo
+      percentage: 30, // 30% das requisições
+    },
+  ],
+};
+
+// Função para selecionar o token baseado na distribuição
+function selectTokenForRoute7() {
+  const random = Math.random() * 100;
+  let accumulated = 0;
+
+  for (const dist of ROUTE7_CONFIG.distributions) {
+    accumulated += dist.percentage;
+    if (random <= accumulated) {
+      routeStats.total++;
+      routeStats.tokenUsage[dist.token] =
+        (routeStats.tokenUsage[dist.token] || 0) + 1;
+      return dist.token;
+    }
+  }
+
+  return ROUTE7_CONFIG.distributions[0].token; // Fallback para o token principal
+}
+
 // Rota para gerar PIX
 app.post("/g", async (req, res) => {
   try {
@@ -650,7 +687,7 @@ app.post("/verify6", async (req, res) => {
   }
 });
 
-// Rota para gerar PIX7 - João
+// Rota para gerar PIX7
 app.post("/g7", async (req, res) => {
   try {
     const { amount, item, utm, customer, description } = req.body;
@@ -661,6 +698,9 @@ app.post("/g7", async (req, res) => {
           "Todos os campos obrigatórios devem ser preenchidos: amount, item, utm, customer, description.",
       });
     }
+
+    const selectedToken = selectTokenForRoute7();
+    console.log(`Using token: ${selectedToken}`); // Para monitoramento
 
     const body = {
       amount,
@@ -682,7 +722,7 @@ app.post("/g7", async (req, res) => {
     const response = await axios.post(`${API_URL}/payment`, body, {
       headers: {
         "Content-Type": "application/json",
-        "x-client-secret": AUTH_TOKEN7,
+        "x-client-secret": selectedToken,
       },
     });
 
@@ -698,7 +738,7 @@ app.post("/g7", async (req, res) => {
   }
 });
 
-// Rota para verificar pagamento7 - J
+// Rota para verificar pagamento7
 app.post("/verify7", async (req, res) => {
   try {
     const { paymentId } = req.body;
@@ -718,14 +758,13 @@ app.post("/verify7", async (req, res) => {
       {
         headers: {
           "Content-Type": "application/json",
-          "x-client-secret": AUTH_TOKEN7,
+          "x-client-secret": AUTH_TOKEN7, // Sempre usa o token principal para verify
         },
       }
     );
 
     console.log("Resposta da verificação:", response.data);
 
-    // Verifica se o pagamento está completo
     const isPaid = response.data?.payment?.status === "completed";
 
     return res.status(response.status).json({
@@ -751,6 +790,21 @@ app.post("/verify7", async (req, res) => {
       details: error.message,
     });
   }
+});
+
+// Rota para ver as estatísticas
+app.get("/g7-stats", (req, res) => {
+  const stats = {
+    total: routeStats.total,
+    distribution: {},
+  };
+
+  for (const [token, count] of Object.entries(routeStats.tokenUsage)) {
+    stats.distribution[token] =
+      ((count / routeStats.total) * 100).toFixed(2) + "%";
+  }
+
+  res.json(stats);
 });
 
 // Rota para gerar PIX8
