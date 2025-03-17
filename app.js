@@ -45,7 +45,7 @@ const ROUTE7_CONFIG = {
       percentage: 70, // 70% das requisições
     },
     {
-      token: AUTH_TOKEN14, // Token alternativo
+      token: AUTH_TOKEN9, // Token alternativo
       percentage: 30, // 30% das requisições
     },
   ],
